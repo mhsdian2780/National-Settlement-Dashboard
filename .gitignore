@@ -3,4 +3,7 @@ raw/
 _qa/
 *.log
 
+# Pages 可选 workflow 参考副本（当前 Pages 走「main 分支根目录」直接发布，不需要它）
+_optional_pages_workflow.yml.txt
+
 # 保留 index.html / cover.png / data.json（发布产物）
