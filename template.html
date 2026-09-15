@@ -1,0 +1,747 @@
+<!--
+  全国配套项目 · 完成核销情况一览表
+  设计：单文件、零外部依赖（无 CDN / 无外链字体 / 无图片 / 无 fetch）
+  打开方式：双击本 .html 即可运行（需启用 JavaScript）
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全国配套项目 · 完成核销情况一览表</title>
+<meta name="description" content="2026年全国配套项目各区域完成与核销情况一览，支持区域 / 肺肿线 / 战役多维筛选。">
+<meta property="og:title" content="全国配套项目 · 完成核销情况一览表">
+<meta property="og:description" content="各区域完成与核销情况一览 · 支持区域/肺肿线/战役筛选，点击图表查看明细。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mhsdian2780.github.io/Central-Project-Settlement-Dashboard/">
+<meta property="og:image" content="https://mhsdian2780.github.io/Central-Project-Settlement-Dashboard/cover.png">
+<meta property="og:site_name" content="全国配套项目核销看板">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root{
+    --c-primary:#14538F;
+    --c-primary-l:#2568B0;
+    --c-sub:#EAF2FB;
+    --c-sub2:#F5F9FF;
+    --c-accent:#F2820C;
+    --c-accent-l:#FFF4E6;
+    --c-green:#0E9F6E;
+    --c-green-l:#E8F7F1;
+    --c-red:#D93025;
+    --c-red-l:#FDECEA;
+    --c-text:#1F2933;
+    --c-sub-t:#6B7280;
+    --c-weak:#9AA5B1;
+    --c-divider:#E5E7EB;
+    --c-bg:#FFFFFF;
+    --c-page:#F7F9FC;
+    --radius:12px;
+    --radius-sm:8px;
+    --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
+    --shadow-lg:0 12px 32px rgba(16,24,40,.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",-apple-system,sans-serif;
+    color:var(--c-text); background:var(--c-page);
+    -webkit-font-smoothing:antialiased; line-height:1.5; font-size:14px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 64px;}
+
+  /* ============ 页头 ============ */
+  .hdr{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+  .hdr h1{font-size:23px;font-weight:600;color:var(--c-primary);margin:0 0 6px;letter-spacing:-.2px;}
+  .hdr .sub{font-size:13px;color:var(--c-sub-t);margin:0;}
+  .hdr .stamp{font-size:12px;color:var(--c-weak);text-align:right;line-height:1.7;}
+  .hdr .stamp b{color:var(--c-primary);font-weight:600;}
+
+  /* ============ 概览指标 ============ */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;margin-bottom:18px;}
+  .kpi{background:var(--c-bg);border:1px solid var(--c-divider);border-radius:var(--radius);
+       padding:14px 16px;box-shadow:var(--shadow);}
+  .kpi .k-lb{font-size:12px;color:var(--c-sub-t);margin-bottom:6px;}
+  .kpi .k-vl{font-size:26px;font-weight:700;color:var(--c-primary);line-height:1.1;
+             font-variant-numeric:tabular-nums;}
+  .kpi .k-vl small{font-size:13px;font-weight:500;color:var(--c-sub-t);margin-left:3px;}
+  .kpi.hl{background:linear-gradient(180deg,#FFFFFF 0%,var(--c-sub2) 100%);border-color:#D3E3F5;}
+  .kpi.hl .k-vl{color:var(--c-accent);}
+  .kpi .k-sub{font-size:11px;color:var(--c-weak);margin-top:4px;}
+
+  /* ============ 筛选区 ============ */
+  .filters{background:var(--c-bg);border:1px solid var(--c-divider);border-radius:var(--radius);
+           padding:16px 18px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .f-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .f-row:last-child{margin-bottom:0;}
+  .f-lb{font-size:13px;font-weight:600;color:var(--c-primary);min-width:56px;flex-shrink:0;}
+  .seg{display:inline-flex;background:var(--c-sub2);border:1px solid var(--c-divider);
+       border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap;}
+  .seg button{
+    font-family:inherit;font-size:13px;font-weight:500;color:var(--c-sub-t);
+    background:transparent;border:none;border-radius:999px;padding:6px 15px;cursor:pointer;
+    transition:all .16s;white-space:nowrap;
+  }
+  .seg button:hover{color:var(--c-primary);background:#fff;}
+  .seg button.on{background:var(--c-primary);color:#fff;font-weight:600;
+                 box-shadow:0 1px 4px rgba(20,83,143,.28);}
+  .seg.lines button.on{background:var(--c-accent);box-shadow:0 1px 4px rgba(242,130,12,.3);}
+
+  /* 战役下拉 */
+  .sel-wrap{position:relative;display:inline-block;}
+  select{
+    font-family:inherit;font-size:13px;color:var(--c-text);
+    background:#fff;border:1px solid var(--c-divider);border-radius:var(--radius-sm);
+    padding:8px 34px 8px 13px;cursor:pointer;min-width:230px;appearance:none;
+    background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B7280' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  select:focus{outline:none;border-color:var(--c-primary);box-shadow:0 0 0 3px rgba(20,83,143,.1);}
+  .btn-clear{font-family:inherit;font-size:12px;color:var(--c-sub-t);background:#fff;
+             border:1px solid var(--c-divider);border-radius:999px;padding:7px 14px;cursor:pointer;}
+  .btn-clear:hover{border-color:var(--c-primary);color:var(--c-primary);}
+
+  /* ============ 视图切换 ============ */
+  .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--c-divider);}
+  .tabs button{
+    font-family:inherit;font-size:14px;font-weight:500;color:var(--c-sub-t);
+    background:transparent;border:none;border-bottom:2px solid transparent;
+    padding:10px 18px;cursor:pointer;transition:all .16s;margin-bottom:-1px;
+  }
+  .tabs button:hover{color:var(--c-primary);}
+  .tabs button.on{color:var(--c-primary);font-weight:600;border-bottom-color:var(--c-primary);}
+
+  /* ============ 图表卡片 ============ */
+  .card{background:var(--c-bg);border:1px solid var(--c-divider);border-radius:var(--radius);
+        box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px;}
+  .card-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+           margin-bottom:16px;flex-wrap:wrap;}
+  .card-hd h2{font-size:16px;font-weight:600;color:var(--c-primary);margin:0;}
+  .card-hd .tip{font-size:12px;color:var(--c-weak);}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--c-sub-t);}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;
+            vertical-align:middle;}
+  .empty{padding:56px 20px;text-align:center;color:var(--c-weak);font-size:14px;}
+
+  /* 横向条形图 */
+  .bars{display:flex;flex-direction:column;gap:14px;}
+  .bar-item{cursor:pointer;border-radius:var(--radius-sm);padding:8px 10px;margin:-8px -10px;
+            transition:background .16s;}
+  .bar-item:hover{background:var(--c-sub2);}
+  .bar-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px;}
+  .bar-name{font-size:14px;font-weight:600;color:var(--c-text);}
+  .bar-name .tag{font-size:11px;font-weight:500;color:var(--c-sub-t);background:var(--c-sub2);
+                 border:1px solid var(--c-divider);border-radius:4px;padding:1px 6px;margin-left:7px;}
+  .bar-vals{font-size:13px;color:var(--c-sub-t);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .bar-vals b{font-size:16px;color:var(--c-primary);font-weight:700;}
+  .bar-vals .pct{font-weight:700;font-size:15px;}
+  .pct.hi{color:var(--c-green);} .pct.mid{color:var(--c-accent);} .pct.lo{color:var(--c-red);}
+  .bar-track{height:22px;background:var(--c-sub);border-radius:6px;overflow:hidden;
+             display:flex;position:relative;}
+  .bar-seg{height:100%;transition:width .5s cubic-bezier(.4,0,.2,1);}
+  .bar-seg.settled{background:var(--c-green);}
+  .bar-seg.done{background:var(--c-primary-l);}
+  .bar-seg.remain{background:#DCE5EF;}
+  .bar-note{font-size:11px;color:var(--c-weak);margin-top:5px;}
+
+  /* 明细表 */
+  .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-sm);}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:860px;}
+  thead th{
+    background:var(--c-sub);color:var(--c-primary);font-weight:600;font-size:12px;
+    text-align:right;padding:10px 12px;border-bottom:1px solid #D3E3F5;white-space:nowrap;
+  }
+  thead th:first-child,thead th:nth-child(2){text-align:left;}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--c-divider);
+           text-align:right;font-variant-numeric:tabular-nums;color:var(--c-text);}
+  tbody td:first-child,tbody td:nth-child(2){text-align:left;}
+  tbody tr:hover{background:var(--c-sub2);}
+  tbody tr.total{background:var(--c-sub);font-weight:700;color:var(--c-primary);}
+  tbody tr.total td{border-bottom:none;color:var(--c-primary);}
+  .chip{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:2px 7px;
+        white-space:nowrap;}
+  .chip.g{background:var(--c-green-l);color:var(--c-green);}
+  .chip.o{background:var(--c-accent-l);color:var(--c-accent);}
+  .chip.r{background:var(--c-red-l);color:var(--c-red);}
+  .chip.n{background:#F1F3F6;color:var(--c-sub-t);}
+  .mini-bar{display:inline-block;width:54px;height:6px;background:var(--c-sub);border-radius:3px;
+            overflow:hidden;vertical-align:middle;margin-left:8px;}
+  .mini-bar i{display:block;height:100%;background:var(--c-primary);}
+
+  /* ============ 弹层 ============ */
+  .mask{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;
+        display:none;align-items:center;justify-content:center;padding:24px;}
+  .mask.on{display:flex;animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);
+         width:100%;max-width:760px;max-height:86vh;display:flex;flex-direction:column;
+         animation:pop .22s cubic-bezier(.2,.9,.3,1.1);}
+  @keyframes pop{from{transform:translateY(14px) scale(.97);opacity:0}
+                 to{transform:none;opacity:1}}
+  .m-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+        padding:20px 22px 14px;border-bottom:1px solid var(--c-divider);}
+  .m-hd h3{margin:0 0 5px;font-size:17px;font-weight:600;color:var(--c-primary);}
+  .m-hd .msub{font-size:12px;color:var(--c-sub-t);}
+  .m-x{background:var(--c-sub2);border:1px solid var(--c-divider);color:var(--c-sub-t);
+       border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;flex-shrink:0;
+       display:flex;align-items:center;justify-content:center;line-height:1;}
+  .m-x:hover{border-color:var(--c-primary);color:var(--c-primary);}
+  .m-bd{padding:18px 22px;overflow-y:auto;flex:1;}
+  .m-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;
+           margin-bottom:18px;}
+  .m-stat{background:var(--c-sub2);border:1px solid var(--c-divider);border-radius:var(--radius-sm);
+          padding:10px 12px;}
+  .m-stat .l{font-size:11px;color:var(--c-sub-t);margin-bottom:4px;}
+  .m-stat .v{font-size:19px;font-weight:700;color:var(--c-primary);font-variant-numeric:tabular-nums;}
+  .m-stat .v.acc{color:var(--c-accent);} .m-stat .v.gr{color:var(--c-green);}
+  .m-stats2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;
+            margin-bottom:16px;}
+  .m-s2{display:flex;justify-content:space-between;align-items:center;font-size:12px;
+        padding:8px 12px;background:#fff;border:1px solid var(--c-divider);border-radius:var(--radius-sm);}
+  .m-s2 .n{color:var(--c-sub-t);} .m-s2 .n b{color:var(--c-text);font-weight:600;margin-left:5px;}
+  .m-note{background:var(--c-accent-l);border-left:3px solid var(--c-accent);border-radius:6px;
+          padding:10px 13px;font-size:12px;color:#8A5300;line-height:1.65;margin-top:14px;}
+
+  /* 区域卡片网格（弹层内） */
+  .rg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(198px,1fr));gap:10px;}
+  .rg-card{border:1px solid var(--c-divider);border-radius:var(--radius-sm);padding:11px 13px;
+           background:#fff;}
+  .rg-card:hover{border-color:#C7D9EE;background:var(--c-sub2);}
+  .rg-t{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .rg-t .n{font-size:13px;font-weight:600;color:var(--c-text);}
+  .rg-t .p{font-size:14px;font-weight:700;}
+  .rg-l{font-size:11px;color:var(--c-sub-t);display:flex;justify-content:space-between;
+        font-variant-numeric:tabular-nums;margin-top:3px;}
+
+  .foot{text-align:center;font-size:12px;color:var(--c-weak);margin-top:28px;line-height:1.9;}
+
+  @media (max-width:640px){
+    .wrap{padding:16px 12px 48px;}
+    .hdr h1{font-size:19px;}
+    .kpi .k-vl{font-size:22px;}
+    .f-lb{min-width:100%;}
+    select{min-width:100%;}
+    .seg button{padding:6px 11px;font-size:12px;}
+    .card{padding:16px 14px;}
+    .bar-name{font-size:13px;}
+    .bar-vals{font-size:12px;}
+    .bar-vals b{font-size:14px;}
+    .mask{padding:10px;}
+    .modal{max-height:92vh;}
+    .m-bd{padding:14px 15px;} .m-hd{padding:16px 15px 12px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div>
+      <h1>全国配套项目 · 完成核销情况一览表</h1>
+      <p class="sub">各区域战役项目完成与核销进度 · 支持区域 / 肺肿线 / 战役多维筛选 · 点击图表查看明细</p>
+    </div>
+    <div class="stamp">
+      数据来源：<b>全国配套项目执行追踪群-H2</b><br>
+      统计口径：项目开始 - 统计日 ｜ 更新：<b id="stamp">—</b>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="filters">
+    <div class="f-row">
+      <span class="f-lb">区域</span>
+      <div class="seg" id="segRegion"></div>
+    </div>
+    <div class="f-row">
+      <span class="f-lb">肺肿线</span>
+      <div class="seg lines" id="segLine"></div>
+    </div>
+    <div class="f-row">
+      <span class="f-lb">战役</span>
+      <div class="sel-wrap"><select id="selItem"></select></div>
+      <button class="btn-clear" id="btnClear">重置筛选</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-v="region" class="on">按区域</button>
+    <button data-v="item">按战役</button>
+    <button data-v="table">明细表</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">
+      <div>
+        <h2 id="cTitle">各区域完成核销情况</h2>
+        <div class="tip" id="cSub" style="margin-top:4px"></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#0E9F6E"></i>已核销</span>
+        <span><i style="background:#2568B0"></i>已开展未核销</span>
+        <span><i style="background:#DCE5EF"></i>未开展</span>
+      </div>
+    </div>
+    <div id="chart"></div>
+  </div>
+
+  <div class="foot">
+    本表由「全国配套项目执行追踪群-H2」自动汇总生成，每周更新<br>
+    数据仅用于内部进度展示，如有疑问请联系项目负责人核对
+  </div>
+</div>
+
+<div class="mask" id="mask">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="m-hd">
+      <div><h3 id="mTitle">—</h3><div class="msub" id="mSub"></div></div>
+      <button class="m-x" id="mX" aria-label="关闭">&times;</button>
+    </div>
+    <div class="m-bd" id="mBody"></div>
+  </div>
+</div>
+
+<script>
+/*__DATA__*/
+</script>
+<script>
+(function(){
+"use strict";
+
+var D = DATA, M = D.meta, ITEMS = D.items, REGIONS = M.regions;
+
+/* ---------- 工具 ---------- */
+function n(v){ return (v===null||v===undefined||isNaN(v))?0:v; }
+function fmt(v){ v=n(v); return (Math.round(v*10)/10).toString(); }
+function pct(v){ if(v===null||v===undefined||isNaN(v))return null; return Math.round(v); }
+function cls(p){ if(p===null)return 'n'; if(p>=80)return 'hi'; if(p>=50)return 'mid'; return 'lo'; }
+function el(id){ return document.getElementById(id); }
+
+/* ---------- 状态 ---------- */
+var S = { region:'全部', line:'全部', item:'__ALL__', view:'region' };
+
+/* ---------- 聚合 ---------- */
+// 取某个区域在某战役下的行
+function rowOf(it, region){ for(var i=0;i<it.rows.length;i++) if(it.rows[i].region===region) return it.rows[i]; return null; }
+
+// 当前筛选命中的战役列表
+function pickedItems(){
+  return ITEMS.filter(function(it){
+    if(S.line!=='全部' && it.line!==S.line) return false;
+    if(S.item!=='__ALL__' && it.id!==S.item) return false;
+    return true;
+  });
+}
+// 当前筛选命中的区域列表
+function pickedRegions(){
+  if(S.item!=='__ALL__' || S.region!=='全部'){
+    if(S.region!=='全部') return [S.region];
+  }
+  return REGIONS;
+}
+
+// 单区域聚合（跨命中战役）
+function aggRegion(region, items){
+  var a={alloc:0,done:0,settled:0,planOpen:0,confirmed:0,nol:0,yol:0,rol:0,has:false};
+  items.forEach(function(it){
+    var r=rowOf(it,region); if(!r) return;
+    a.has=true;
+    ['alloc','done','settled','planOpen','confirmed','nol','yol','rol'].forEach(function(k){
+      if(r[k]!==null&&r[k]!==undefined) a[k]+=r[k];
+    });
+  });
+  a.settleRate = a.done>0 ? a.settled/a.done*100 : null;
+  a.execRate   = a.alloc>0 ? a.done/a.alloc*100 : null;
+  return a;
+}
+// 单战役聚合
+function aggItem(it){
+  var a={alloc:n(it.alloc),done:n(it.done),settled:n(it.settled),
+         planOpen:n(it.planOpen),confirmed:n(it.confirmed),cancel:n(it.cancel),
+         nol:n(it.nol),yol:n(it.yol),rol:n(it.rol)};
+  a.settleRate = a.done>0 ? a.settled/a.done*100 : null;
+  a.execRate   = a.alloc>0 ? a.done/a.alloc*100 : null;
+  a.planRate   = a.alloc>0 ? a.confirmed/a.alloc*100 : null;
+  return a;
+}
+
+/* ---------- KPI ---------- */
+function renderKpis(){
+  var items=pickedItems(), reg=S.region;
+  var tot={alloc:0,done:0,settled:0,nol:0,yol:0,rol:0};
+  if(reg==='全部'){
+    items.forEach(function(it){ var a=aggItem(it);
+      tot.alloc+=a.alloc; tot.done+=a.done; tot.settled+=a.settled;
+      tot.nol+=a.nol; tot.yol+=a.yol; tot.rol+=a.rol; });
+  }else{
+    items.forEach(function(it){ var r=rowOf(it,reg); if(!r)return;
+      ['alloc','done','settled','nol','yol','rol'].forEach(function(k){ if(r[k]!==null&&r[k]!==undefined) tot[k]+=r[k]; }); });
+  }
+  var sr = tot.done>0 ? tot.settled/tot.done*100 : null;
+  var er = tot.alloc>0 ? tot.done/tot.alloc*100 : null;
+  var cover = tot.nol+tot.yol+tot.rol;
+
+  el('kpis').innerHTML =
+    kpi('规划场次', fmt(tot.alloc), '场', '覆盖 '+items.length+' 个战役') +
+    kpi('已开展场次', fmt(tot.done), '场', '执行率 '+(er===null?'—':Math.round(er)+'%')) +
+    kpi('已核销场次', fmt(tot.settled), '场', '核销率 '+(sr===null?'—':Math.round(sr)+'%'), true) +
+    kpi('待核销场次', fmt(Math.max(0,tot.done-tot.settled)), '场', '已开展未核销，待推进') +
+    kpi('覆盖人数合计', fmt(cover), '人', 'NOL '+fmt(tot.nol)+' ｜ YOL '+fmt(tot.yol)+' ｜ ROL '+fmt(tot.rol));
+  el('stamp').textContent = M.updated;
+}
+function kpi(l,v,u,s,hl){
+  return '<div class="kpi'+(hl?' hl':'')+'"><div class="k-lb">'+l+'</div>'+
+         '<div class="k-vl">'+v+'<small>'+u+'</small></div>'+
+         '<div class="k-sub">'+s+'</div></div>';
+}
+
+/* ---------- 筛选控件 ---------- */
+function renderFilters(){
+  // 区域
+  var h='<button data-r="全部" class="'+(S.region==='全部'?'on':'')+'">全部区域</button>';
+  REGIONS.forEach(function(r){ h+='<button data-r="'+r+'" class="'+(S.region===r?'on':'')+'">'+r.replace('区域','')+'</button>'; });
+  el('segRegion').innerHTML=h;
+
+  // 肺肿线
+  var L=['全部','早肺','晚肺'];
+  el('segLine').innerHTML = L.map(function(l){
+    return '<button data-l="'+l+'" class="'+(S.line===l?'on':'')+'">'+(l==='全部'?'全部':l)+'</button>';
+  }).join('');
+
+  // 战役（仅显示与所选肺肿线匹配的；全部 13 个项目，含已停止的云端ARTS2.0）
+  var pool = visibleItems();
+  var opts=['<option value="__ALL__">全部战役（'+(S.line==='全部'?'13':pool.length)+' 个）</option>'];
+  if(S.line!=='全部'){
+    // 已选定肺肿线：平铺展示，不再分组，更直观
+    pool.forEach(function(it){
+      opts.push('<option value="'+it.id+'">'+it.name+'</option>');
+    });
+  }else{
+    // 全部肺肿线：按 早肺 / 晚肺 分组
+    var order=['早肺','晚肺'];
+    order.forEach(function(ln){
+      var g=pool.filter(function(it){return it.line===ln;});
+      if(!g.length) return;
+      opts.push('<optgroup label="'+ln+'（'+g.length+'）">');
+      g.forEach(function(it){ opts.push('<option value="'+it.id+'">'+it.name+'</option>'); });
+      opts.push('</optgroup>');
+    });
+  }
+  var sel=el('selItem');
+  sel.innerHTML=opts.join('');
+  sel.value = S.item;
+  if(sel.value!==S.item) { S.item='__ALL__'; sel.value='__ALL__'; }
+}
+
+// 当前肺肿线下的可选战役
+function visibleItems(){
+  return ITEMS.filter(function(it){ return S.line==='全部' || it.line===S.line; });
+}
+
+/* ---------- 图表 ---------- */
+function barItem(name, tag, a){
+  var alloc=n(a.alloc), done=n(a.done), settled=n(a.settled);
+  var sPct = alloc>0 ? settled/alloc*100 : 0;
+  var dPct = alloc>0 ? done/alloc*100 : 0;
+  var unPct = Math.max(0, 100-dPct);
+  var sr = a.settleRate;
+  var hasData = alloc>0 || done>0;
+  var html = '<div class="bar-item" data-k="'+name+'">'+
+    '<div class="bar-top"><div class="bar-name">'+name+(tag?'<span class="tag">'+tag+'</span>':'')+'</div>'+
+    '<div class="bar-vals">核销 <b>'+fmt(settled)+'</b> / 已开展 '+fmt(done)+
+    ' ｜ 核销率 <span class="pct '+cls(sr)+'">'+(sr===null?'—':Math.round(sr)+'%')+'</span></div></div>'+
+    '<div class="bar-track">'+
+      (hasData ? '<div class="bar-seg settled" style="width:'+sPct.toFixed(2)+'%"></div>'+
+                 '<div class="bar-seg done" style="width:'+Math.max(0,dPct-sPct).toFixed(2)+'%"></div>'+
+                 '<div class="bar-seg remain" style="width:'+unPct.toFixed(2)+'%"></div>'
+               : '<div class="bar-seg remain" style="width:100%"></div>')+
+    '</div>'+
+    '<div class="bar-note">规划 '+fmt(alloc)+' 场 ｜ 已开展 '+fmt(done)+' 场（执行率 '+
+      (a.execRate===null?'—':Math.round(a.execRate)+'%')+'） ｜ 已核销 '+fmt(settled)+' 场</div>'+
+  '</div>';
+  return html;
+}
+
+// 核销率排序：从高到低（核销率为 null 的排最后；同率按已核销场次、再按名称兜底，保证顺序稳定）
+function bySettleRate(x,y){
+  var rx=x.a.settleRate, ry=y.a.settleRate;
+  if(rx===null&&ry===null) return n(y.a.settled)-n(x.a.settled);
+  if(rx===null) return 1;
+  if(ry===null) return -1;
+  if(ry!==rx) return ry-rx;
+  return n(y.a.settled)-n(x.a.settled);
+}
+
+function renderChart(){
+  var box=el('chart'), items=pickedItems(), view=S.view;
+  if(!items.length){ box.innerHTML='<div class="empty">当前筛选条件下暂无数据</div>'; return; }
+
+  if(view==='region'){
+    if(S.region!=='全部'){
+      // 单区域视图 → 按战役展开（按核销率从高到低）
+      el('cTitle').textContent = S.region + ' · 各战役完成核销情况';
+      el('cSub').textContent = '共 '+items.length+' 个战役，按核销率从高到低 ｜ 点击任一条查看该战役明细';
+      var arr0=items.map(function(it){ return {it:it,a:aggRegion(S.region,[it])}; });
+      arr0.sort(bySettleRate);
+      box.innerHTML='<div class="bars">'+arr0.map(function(x){
+        return barItem(x.it.name, x.it.line, x.a);
+      }).join('')+'</div>';
+      return;
+    }
+    // 全部区域对比（按核销率从高到低）
+    el('cTitle').textContent='各区域完成核销情况'+(S.line!=='全部'?' · '+S.line:'');
+    el('cSub').textContent='共 '+items.length+' 个战役，各区域按核销率从高到低 ｜ 点击任一区域查看该区域明细';
+    var arr=REGIONS.map(function(r){ return {r:r,a:aggRegion(r,items)}; })
+                   .filter(function(x){ return x.a.has; });
+    arr.sort(bySettleRate);
+    box.innerHTML='<div class="bars">'+arr.map(function(x){
+      return barItem(x.r, fmt(x.a.alloc)+' 场规划', x.a);
+    }).join('')+'</div>';
+    return;
+
+  }else if(view==='item'){
+    el('cTitle').textContent='各战役完成核销情况'+(S.region!=='全部'?' · '+S.region:'');
+    el('cSub').textContent='共 '+items.length+' 个战役，按核销率从高到低 ｜ 点击任一战役查看区域分布';
+    var arr2=items.map(function(it){ return {it:it,a:aggItem(it)}; });
+    arr2.sort(bySettleRate);
+    box.innerHTML='<div class="bars">'+arr2.map(function(x){
+      return barItem(x.it.name, x.it.line, x.a);
+    }).join('')+'</div>';
+    return;
+
+  }else{
+    el('cTitle').textContent='明细表 · 区域 × 战役完成核销一览';
+    el('cSub').textContent='横轴为区域，纵轴为战役（按核销率从高到低） ｜ 单元格显示 已核销 / 已开展（核销率）';
+    box.innerHTML = renderTable(items);
+  }
+}
+
+function rateChip(p){
+  var c=cls(p);
+  return '<span class="chip '+(c==='hi'?'g':c==='mid'?'o':c==='lo'?'r':'n')+'">'+
+         (p===null?'—':p+'%')+'</span>';
+}
+
+function renderTable(items){
+  // 表头：区域
+  var head='<thead><tr><th>战役</th><th>肺肿线</th>';
+  if(S.region==='全部'){ REGIONS.forEach(function(r){ head+='<th>'+r+'</th>'; }); }
+  else { head+='<th>'+S.region+'</th>'; }
+  head+='<th>合计</th></tr></thead>';
+
+  var body='<tbody>';
+  var colTot={}; REGIONS.forEach(function(r){ colTot[r]={alloc:0,done:0,settled:0}; });
+  var gt={alloc:0,done:0,settled:0};
+
+  // 按核销率从高到低排序（与条形图口径一致）
+  var rows = items.map(function(it){ return {it:it, a:aggItem(it)}; });
+  rows.sort(bySettleRate);
+
+  rows.forEach(function(x){
+    var it=x.it, a=x.a;
+    body+='<tr><td>'+it.name+'</td><td><span class="chip n">'+it.line+'</span></td>';
+    var scope = S.region==='全部'?REGIONS:[S.region];
+    scope.forEach(function(r){
+      var row=rowOf(it,r);
+      if(!row){ body+='<td style="color:#C7CDD6">—</td>'; return; }
+      var d=n(row.done), s=n(row.settled), al=n(row.alloc);
+      var p = d>0?Math.round(s/d*100):null;
+      colTot[r].alloc+=al; colTot[r].done+=d; colTot[r].settled+=s;
+      body+='<td>'+fmt(s)+' / '+fmt(d)+' '+rateChip(p)+'</td>';
+    });
+    var d2=a.done,s2=a.settled;
+    gt.alloc+=a.alloc; gt.done+=d2; gt.settled+=s2;
+    var p2 = d2>0?Math.round(s2/d2*100):null;
+    body+='<td><b>'+fmt(s2)+' / '+fmt(d2)+'</b> '+rateChip(p2)+'</td></tr>';
+  });
+
+  // 合计行
+  body+='<tr class="total"><td>合计</td><td>—</td>';
+  var scope = S.region==='全部'?REGIONS:[S.region];
+  scope.forEach(function(r){
+    var c=colTot[r]; var p=c.done>0?Math.round(c.settled/c.done*100):null;
+    body+='<td>'+fmt(c.settled)+' / '+fmt(c.done)+' '+rateChip(p)+'</td>';
+  });
+  var gp=gt.done>0?Math.round(gt.settled/gt.done*100):null;
+  body+='<td>'+fmt(gt.settled)+' / '+fmt(gt.done)+' '+rateChip(gp)+'</td></tr></tbody>';
+
+  return '<div class="tbl-scroll"><table>'+head+body+'</table></div>';
+}
+
+/* ---------- 弹层 ---------- */
+function openModal(html, title, sub){
+  el('mTitle').textContent=title; el('mSub').textContent=sub||'';
+  el('mBody').innerHTML=html; el('mask').classList.add('on');
+}
+function closeModal(){ el('mask').classList.remove('on'); }
+
+// 区域明细
+function showRegion(region){
+  var items=pickedItems();
+  var a=aggRegion(region,items);
+  // 取消场次仅在「全部战役」口径下累加才准确（原表按项目列示，跨战役求和会重复计数）
+  var isAll = (S.item==='__ALL__');
+  var conf=0,cancel=0,planOpen=0;
+  items.forEach(function(it){ var r=rowOf(it,region); if(!r)return;
+    conf+=n(r.confirmed); cancel+=n(r.cancel); planOpen+=n(r.planOpen); });
+
+  var st='<div class="m-stats">'+
+    ms('规划场次', fmt(a.alloc), '') +
+    ms('已开展', fmt(a.done), '') +
+    ms('已核销', fmt(a.settled), 'acc') +
+    ms('核销率', a.settleRate===null?'—':Math.round(a.settleRate)+'%', 'gr') +
+    ms('执行率', a.execRate===null?'—':Math.round(a.execRate)+'%', '') +
+    '</div>';
+
+  st+='<div class="m-stats2">'+
+    ms2('确定场次（含已开）', fmt(conf)) +
+    ms2('已确定未开场次', fmt(planOpen)) +
+    ms2('确定后取消场次', fmt(cancel)) +
+    ms2('NOL 覆盖', fmt(a.nol)+' 人') +
+    ms2('YOL 覆盖', fmt(a.yol)+' 人') +
+    ms2('ROL 覆盖', fmt(a.rol)+' 人') +
+    '</div>';
+
+  // 该区域下各战役（按核销率从高到低）
+  st+='<div style="font-size:13px;font-weight:600;color:#14538F;margin:16px 0 10px">各战役明细（按核销率从高到低）</div>';
+  st+='<div class="rg-grid">';
+  var rgRows=[];
+  items.forEach(function(it){
+    var r=rowOf(it,region); if(!r) return;
+    var d=n(r.done), s=n(r.settled);
+    rgRows.push({it:it,r:r,a:{settleRate:d>0?s/d*100:null, settled:s}});
+  });
+  rgRows.sort(bySettleRate);
+  rgRows.forEach(function(x){
+    var it=x.it, r=x.r;
+    var d=n(r.done), s=n(r.settled);
+    var p=d>0?Math.round(s/d*100):null;
+    st+='<div class="rg-card"><div class="rg-t"><span class="n">'+it.name+'</span>'+
+        '<span class="p pct '+cls(p)+'">'+(p===null?'—':p+'%')+'</span></div>'+
+        '<div class="rg-l"><span>规划 '+fmt(r.alloc)+' 场</span><span>已开展 '+fmt(d)+' 场</span></div>'+
+        '<div class="rg-l"><span>已核销 '+fmt(s)+' 场</span><span>取消 '+fmt(r.cancel)+' 场</span></div>'+
+        (r.note?'<div class="m-note" style="margin-top:9px;font-size:11px;padding:7px 10px">'+r.note+'</div>':'')+
+        '</div>';
+  });
+  st+='</div>';
+
+  if(!isAll){
+    st+='<div class="m-note">取消场次为各战役独立口径，跨战役汇总不宜直接相加，建议以单战役数值为准。核销率 = 已核销 ÷ 已开展。</div>';
+  }
+
+  openModal(st, region, '覆盖 '+items.length+' 个战役 ｜ 统计口径：项目开始 - 统计日');
+}
+
+// 战役明细（区域分布）
+function showItem(itemId){
+  var it=null;
+  for(var i=0;i<ITEMS.length;i++) if(ITEMS[i].id===itemId) it=ITEMS[i];
+  if(!it) return;
+  var a=aggItem(it);
+
+  var st='<div class="m-stats">'+
+    ms('规划场次', fmt(a.alloc), '') +
+    ms('已开展', fmt(a.done), '') +
+    ms('已核销', fmt(a.settled), 'acc') +
+    ms('核销率', a.settleRate===null?'—':Math.round(a.settleRate)+'%', 'gr') +
+    ms('执行率', a.execRate===null?'—':Math.round(a.execRate)+'%', '') +
+    ms('规划进度', a.planRate===null?'—':Math.round(a.planRate)+'%', '') +
+    '</div>';
+
+  st+='<div class="m-stats2">'+
+    ms2('确定场次（含已开）', fmt(a.confirmed)) +
+    ms2('已确定未开场次', fmt(a.planOpen)) +
+    ms2('确定后取消场次', fmt(a.cancel)) +
+    ms2('NOL 覆盖', fmt(a.nol)+' 人') +
+    ms2('YOL 覆盖', fmt(a.yol)+' 人') +
+    ms2('ROL 覆盖', fmt(a.rol)+' 人') +
+    '</div>';
+
+  st+='<div style="font-size:13px;font-weight:600;color:#14538F;margin:16px 0 10px">各区域明细（按核销率从高到低）</div>';
+  st+='<div class="rg-grid">';
+  var rgRows2=[];
+  REGIONS.forEach(function(r){
+    var row=rowOf(it,r); if(!row) return;
+    var d=n(row.done), s=n(row.settled);
+    rgRows2.push({r:r,row:row,a:{settleRate:d>0?s/d*100:null, settled:s}});
+  });
+  rgRows2.sort(bySettleRate);
+  rgRows2.forEach(function(x){
+    var r=x.r, row=x.row;
+    var d=n(row.done), s=n(row.settled);
+    var p=d>0?Math.round(s/d*100):null;
+    st+='<div class="rg-card"><div class="rg-t"><span class="n">'+r+'</span>'+
+        '<span class="p pct '+cls(p)+'">'+(p===null?'—':p+'%')+'</span></div>'+
+        '<div class="rg-l"><span>规划 '+fmt(row.alloc)+' 场</span><span>已开展 '+fmt(d)+' 场</span></div>'+
+        '<div class="rg-l"><span>已核销 '+fmt(s)+' 场</span><span>取消 '+fmt(row.cancel)+' 场</span></div>'+
+        (row.note?'<div class="m-note" style="margin-top:9px;font-size:11px;padding:7px 10px">'+row.note+'</div>':'')+
+        '</div>';
+  });
+  st+='</div>';
+
+  openModal(st, it.name, it.group+' · '+it.line+' ｜ 覆盖 '+it.rows.length+' 个区域');
+}
+function ms(l,v,c){ return '<div class="m-stat"><div class="l">'+l+'</div><div class="v '+c+'">'+v+'</div></div>'; }
+function ms2(k,v){ return '<div class="m-s2"><span class="n">'+k+'</span><b>'+v+'</b></div>'; }
+
+/* ---------- 交互绑定 ---------- */
+el('segRegion').addEventListener('click', function(e){
+  var b=e.target.closest('button[data-r]'); if(!b) return;
+  S.region=b.getAttribute('data-r'); S.view='region';
+  renderFilters(); renderKpis(); renderChart(); syncTabs();
+});
+el('segLine').addEventListener('click', function(e){
+  var b=e.target.closest('button[data-l]'); if(!b) return;
+  S.line=b.getAttribute('data-l');
+  renderFilters(); renderKpis(); renderChart(); syncTabs();
+});
+el('selItem').addEventListener('change', function(e){
+  S.item=e.target.value;
+  renderKpis(); renderChart(); syncTabs();
+});
+el('btnClear').addEventListener('click', function(){
+  S.region='全部'; S.line='全部'; S.item='__ALL__'; S.view='region';
+  renderFilters(); renderKpis(); renderChart(); syncTabs();
+});
+el('tabs').addEventListener('click', function(e){
+  var b=e.target.closest('button[data-v]'); if(!b) return;
+  S.view=b.getAttribute('data-v');
+  renderChart(); syncTabs();
+});
+function syncTabs(){
+  [].forEach.call(el('tabs').querySelectorAll('button'), function(b){
+    b.classList.toggle('on', b.getAttribute('data-v')===S.view);
+  });
+}
+
+el('chart').addEventListener('click', function(e){
+  var bi=e.target.closest('.bar-item');
+  if(bi && S.view!=='table'){
+    var key=bi.getAttribute('data-k');
+    if(S.view==='region' && S.region==='全部'){ showRegion(key); return; }
+    if(S.view==='region' && S.region!=='全部'){
+      // 单区域下按战役名找
+      pickedItems().forEach(function(it){ if(it.name===key) showItem(it.id); });
+      return;
+    }
+    if(S.view==='item'){
+      pickedItems().forEach(function(it){ if(it.name===key) showItem(it.id); });
+      return;
+    }
+  }
+  // 表格内点击行
+  var tr=e.target.closest('tbody tr');
+  if(tr && S.view==='table'){
+    var nm=tr.querySelector('td') && tr.querySelector('td').textContent;
+    if(nm && nm!=='合计') pickedItems().forEach(function(it){ if(it.name===nm) showItem(it.id); });
+  }
+});
+el('mX').addEventListener('click', closeModal);
+el('mask').addEventListener('click', function(e){ if(e.target===el('mask')) closeModal(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeModal(); });
+
+/* ---------- 启动 ---------- */
+renderFilters(); renderKpis(); renderChart(); syncTabs();
+})();
+</script>
+</body>
+</html>
