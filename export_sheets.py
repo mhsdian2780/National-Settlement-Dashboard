@@ -14,8 +14,39 @@ export_sheets.py — 从腾讯文档「全国配套项目执行追踪群-H2」�
 import subprocess, json, sys, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PY_EXE = r'C:/Users/MyGo！！！！！/.workbuddy/binaries/python/versions/3.13.12/python.exe'
-DOC_PY = r'C:/Users/MyGo！！！！！/.workbuddy/plugins/cache/workbuddy-builtin/tencent-docs-plugin/5.5.6-wb.38337834.g5f969292.h4918b5ced607/skills/tencent-docs/tencentdocs.py'
+
+# 自动定位运行环境（兼容不同电脑的用户名 / 不同版本的 python 与插件目录）
+_HOME = os.path.expanduser('~')
+_WB = os.path.join(_HOME, '.workbuddy')
+
+
+def _find_python():
+    """优先用 WorkBuddy 自带 python，其次回落到系统 python。"""
+    base = os.path.join(_WB, 'binaries', 'python', 'versions')
+    if os.path.isdir(base):
+        for ver in sorted(os.listdir(base), reverse=True):
+            exe = os.path.join(base, ver, 'python.exe')
+            if os.path.isfile(exe):
+                return exe
+    return sys.executable
+
+
+def _find_doc_py():
+    """在插件缓存里找任意版本的 tencent-docs 桥接脚本。"""
+    root = os.path.join(_WB, 'plugins', 'cache', 'workbuddy-builtin', 'tencent-docs-plugin')
+    if not os.path.isdir(root):
+        return None
+    cands = []
+    for dirpath, _, filenames in os.walk(root):
+        if 'tencentdocs.py' in filenames and os.path.basename(dirpath) == 'tencent-docs':
+            cands.append(os.path.join(dirpath, 'tencentdocs.py'))
+    return sorted(cands)[-1] if cands else None
+
+
+PY_EXE = _find_python()
+DOC_PY = _find_doc_py()
+if not DOC_PY:
+    raise SystemExit('ERROR: 未找到腾讯文档桥接脚本 tencentdocs.py，请确认 tencent-docs 插件已安装')
 
 FILE_ID = 'IPItsCBmNiMC'
 
