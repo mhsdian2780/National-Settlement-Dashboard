@@ -7,7 +7,7 @@ CSV 表头含引号内换行，必须用 csv.reader 正确读取（跨行引号�
 每张 sheet 可能包含多个「区块」（如 美乐肺辅=区域赛+省级赛；53学苑=大咖线上会+MDT+大咖行）。
 按「第二列 == 分配场次」识别区块表头，向下取区域行，遇到空行或下一个表头前结束。
 """
-import csv, json, os, re
+import csv, datetime, json, os, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(HERE, 'raw')
@@ -226,7 +226,7 @@ def main():
     tot_sell  = sum(i['settled'] for i in items if i['settled'])
     data = {
         'meta': {
-            'updated': '2026-09-15',
+            'updated': datetime.date.today().isoformat(),
             'source': '全国配套项目执行追踪群-H2',
             'regions': REGIONS,
             'lines': ['早肺', '晚肺'],
